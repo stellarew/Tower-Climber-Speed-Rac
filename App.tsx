@@ -11,7 +11,13 @@ import {
   INITIAL_SHOE_UPGRADE_COST,
   SHOE_UPGRADE_COST_MULTIPLIER,
   SHOE_BONUS_PER_LEVEL,
-  AUTO_CLAIM_COST,
+  FLOATING_ITEM_MIN_SPAWN_INTERVAL,
+  FLOATING_ITEM_MAX_SPAWN_INTERVAL,
+  FLOATING_ITEM_LIFESPAN,
+  FLOATING_ITEM_MIN_COIN_BONUS_SECONDS,
+  FLOATING_ITEM_MAX_COIN_BONUS_SECONDS,
+  FLOATING_ITEM_MIN_TROPHY_BONUS,
+  FLOATING_ITEM_MAX_TROPHY_BONUS,
 } from './constants';
 import GameDisplay from './components/GameDisplay';
 import StatsPanel from './components/StatsPanel';
@@ -20,11 +26,11 @@ import TrophyIcon from './components/icons/TrophyIcon';
 import TowerSelectionModal from './components/TowerSelectionModal';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
 
+const LOCAL_STORAGE_KEY = 'towerClimberGameState';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(() => {
-    // Lazy initialization could be used here to load from localStorage in the future
-    return {
+    const initialState: GameState = {
       height: 0,
       coins: 0,
       trophies: 0,
@@ -35,15 +41,40 @@ const App: React.FC = () => {
       isAtTop: false,
       towerLevel: 1,
       highestTowerUnlocked: 1,
-      autoClaimUnlocked: false,
+      autoClaimEnabled: false,
       autoNextTowerEnabled: true,
     };
+    
+    try {
+      const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedState) {
+        // Merge saved state with initial state to prevent crashes on new properties
+        return { ...initialState, ...JSON.parse(savedState) };
+      }
+    } catch (error) {
+      console.error("Failed to parse saved game state:", error);
+    }
+    
+    return initialState;
   });
   
   const [isTowerModalOpen, setTowerModalOpen] = useState(false);
+  const [floatingItem, setFloatingItem] = useState<{ id: number; x: number; y: number; } | null>(null);
 
   const lastUpdateTime = useRef<number>(0);
   const gameLoopRef = useRef<number>(0);
+  const spawnTimerRef = useRef<number | null>(null);
+  const lifespanTimerRef = useRef<number | null>(null);
+  
+  // Effect to save game state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(gameState));
+    } catch (error) {
+      console.error("Failed to save game state:", error);
+    }
+  }, [gameState]);
+
 
   const getCurrentTowerHeight = (level: number) => {
     const towerIndex = Math.min(level - 1, TOWER_HEIGHTS.length - 1);
@@ -59,8 +90,36 @@ const App: React.FC = () => {
       isAtTop: false,
     };
   }
+  
+  const scheduleNextSpawn = useCallback(() => {
+    if (spawnTimerRef.current) clearTimeout(spawnTimerRef.current);
+    const delay = Math.random() * (FLOATING_ITEM_MAX_SPAWN_INTERVAL - FLOATING_ITEM_MIN_SPAWN_INTERVAL) + FLOATING_ITEM_MIN_SPAWN_INTERVAL;
+    spawnTimerRef.current = window.setTimeout(spawnFloatingItem, delay);
+  }, []);
+  
+  const spawnFloatingItem = useCallback(() => {
+    setFloatingItem({
+      id: Date.now(),
+      x: 10 + Math.random() * 80, // % from left
+      y: 10 + Math.random() * 60, // % from top (within GameDisplay)
+    });
 
-  // Effect to handle auto-progression to the next tower
+    if (lifespanTimerRef.current) clearTimeout(lifespanTimerRef.current);
+    lifespanTimerRef.current = window.setTimeout(() => {
+      setFloatingItem(null);
+      scheduleNextSpawn();
+    }, FLOATING_ITEM_LIFESPAN);
+  }, [scheduleNextSpawn]);
+  
+  useEffect(() => {
+    scheduleNextSpawn();
+    return () => {
+      if (spawnTimerRef.current) clearTimeout(spawnTimerRef.current);
+      if (lifespanTimerRef.current) clearTimeout(lifespanTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (gameState.autoNextTowerEnabled && 
         gameState.trophies >= TROPHIES_FOR_NEXT_TOWER && 
@@ -69,7 +128,6 @@ const App: React.FC = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.trophies, gameState.autoNextTowerEnabled]);
-
 
   const gameLoop = useCallback((timestamp: number) => {
     if (lastUpdateTime.current === 0) {
@@ -94,11 +152,11 @@ const App: React.FC = () => {
       let newHeight = prev.height + distanceClimbed;
 
       if (newHeight >= currentTowerHeight) {
-        if (prev.autoClaimUnlocked) {
-          // Auto-claim the trophy and continue
-          return claimTrophyInternal(prev);
+        newHeight = currentTowerHeight; // Cap height at tower height
+        if (prev.autoClaimEnabled) {
+          // Use a fresh state for the claim to avoid race conditions with a stale 'prev'
+          return claimTrophyInternal({ ...prev, height: newHeight, coins: newCoins });
         } else {
-          // Stop at the top and wait for manual claim
           return { ...prev, height: currentTowerHeight, coins: newCoins, isAtTop: true };
         }
       }
@@ -141,18 +199,28 @@ const App: React.FC = () => {
       return prev;
     });
   };
-  
-  const handlePurchaseAutoClaim = () => {
-    setGameState(prev => {
-      if (prev.coins >= AUTO_CLAIM_COST && !prev.autoClaimUnlocked) {
-        return { ...prev, coins: prev.coins - AUTO_CLAIM_COST, autoClaimUnlocked: true };
-      }
-      return prev;
-    });
-  };
 
   const handleClaimTrophy = () => {
     setGameState(prev => prev.isAtTop ? claimTrophyInternal(prev) : prev);
+  };
+  
+  const handleCollectFloatingItem = () => {
+    setGameState(prev => {
+      const coinSeconds = FLOATING_ITEM_MIN_COIN_BONUS_SECONDS + Math.random() * (FLOATING_ITEM_MAX_COIN_BONUS_SECONDS - FLOATING_ITEM_MIN_COIN_BONUS_SECONDS);
+      const coinBonus = prev.speedLevel * coinSeconds;
+
+      const trophyBonus = Math.floor(FLOATING_ITEM_MIN_TROPHY_BONUS + Math.random() * (FLOATING_ITEM_MAX_TROPHY_BONUS - FLOATING_ITEM_MIN_TROPHY_BONUS + 1));
+
+      return {
+        ...prev,
+        coins: prev.coins + coinBonus,
+        trophies: prev.trophies + trophyBonus,
+      };
+    });
+    
+    if (lifespanTimerRef.current) clearTimeout(lifespanTimerRef.current);
+    setFloatingItem(null);
+    scheduleNextSpawn();
   };
   
   const handleUnlockNextTower = () => {
@@ -163,8 +231,8 @@ const App: React.FC = () => {
           ...prev,
           trophies: prev.trophies - TROPHIES_FOR_NEXT_TOWER,
           highestTowerUnlocked: newHighest,
-          towerLevel: newHighest, // Automatically move to the new tower
-          height: 0, // Reset height for the new tower
+          towerLevel: newHighest,
+          height: 0,
           isAtTop: false,
         };
       }
@@ -184,6 +252,10 @@ const App: React.FC = () => {
   
   const toggleAutoNextTower = () => {
     setGameState(prev => ({...prev, autoNextTowerEnabled: !prev.autoNextTowerEnabled}));
+  }
+  
+  const toggleAutoClaim = () => {
+    setGameState(prev => ({...prev, autoClaimEnabled: !prev.autoClaimEnabled}));
   }
 
   const currentTowerHeight = getCurrentTowerHeight(gameState.towerLevel);
@@ -209,25 +281,28 @@ const App: React.FC = () => {
           </header>
 
           <main className="p-4">
-            <GameDisplay height={gameState.height} towerHeight={currentTowerHeight} />
+            <GameDisplay 
+              height={gameState.height} 
+              towerHeight={currentTowerHeight}
+              floatingItem={floatingItem}
+              onCollectFloatingItem={handleCollectFloatingItem}
+            />
             <StatsPanel 
               gameState={gameState} 
               currentSpeed={currentSpeed}
               onToggleAutoNext={toggleAutoNextTower}
+              onToggleAutoClaim={toggleAutoClaim}
             />
             <ControlsPanel 
               onUpgradeSpeed={handleUpgradeSpeed}
               onUpgradeShoes={handleUpgradeShoes}
               onClaimTrophy={handleClaimTrophy}
-              onPurchaseAutoClaim={handlePurchaseAutoClaim}
               onUnlockNextTower={handleUnlockNextTower}
               upgradeCost={gameState.upgradeCost}
               shoeUpgradeCost={gameState.shoeUpgradeCost}
-              autoClaimCost={AUTO_CLAIM_COST}
               trophyCost={TROPHIES_FOR_NEXT_TOWER}
               coins={gameState.coins}
               isAtTop={gameState.isAtTop}
-              autoClaimUnlocked={gameState.autoClaimUnlocked}
               canUnlockNext={canUnlockNext}
             />
           </main>

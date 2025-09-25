@@ -1,13 +1,15 @@
-
 import React from 'react';
 import UpArrowIcon from './icons/UpArrowIcon';
+import FloatingItem from './FloatingItem';
 
 interface GameDisplayProps {
   height: number;
   towerHeight: number;
+  floatingItem: { id: number; x: number; y: number } | null;
+  onCollectFloatingItem: () => void;
 }
 
-const GameDisplay: React.FC<GameDisplayProps> = ({ height, towerHeight }) => {
+const GameDisplay: React.FC<GameDisplayProps> = ({ height, towerHeight, floatingItem, onCollectFloatingItem }) => {
   const progressPercent = (height / towerHeight) * 100;
 
   return (
@@ -21,6 +23,15 @@ const GameDisplay: React.FC<GameDisplayProps> = ({ height, towerHeight }) => {
           transition: 'transform 0.1s linear'
         }}
       ></div>
+
+      {/* Floating Item */}
+      {floatingItem && (
+        <FloatingItem
+          x={floatingItem.x}
+          y={floatingItem.y}
+          onClick={onCollectFloatingItem}
+        />
+      )}
       
       {/* Player Icon */}
       <div className="absolute left-1/2 -translate-x-1/2 bottom-4 w-8 h-8 flex items-center justify-center">

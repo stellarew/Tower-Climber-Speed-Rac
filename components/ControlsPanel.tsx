@@ -3,21 +3,17 @@ import CoinIcon from './icons/CoinIcon';
 import TrophyIcon from './icons/TrophyIcon';
 import ShoeIcon from './icons/ShoeIcon';
 import SpeedIcon from './icons/SpeedIcon';
-import AutoClaimIcon from './icons/AutoClaimIcon';
 
 interface ControlsPanelProps {
   onUpgradeSpeed: () => void;
   onUpgradeShoes: () => void;
   onClaimTrophy: () => void;
-  onPurchaseAutoClaim: () => void;
   onUnlockNextTower: () => void;
   upgradeCost: number;
   shoeUpgradeCost: number;
-  autoClaimCost: number;
   trophyCost: number;
   coins: number;
   isAtTop: boolean;
-  autoClaimUnlocked: boolean;
   canUnlockNext: boolean;
 }
 
@@ -51,15 +47,12 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({
   onUpgradeSpeed, 
   onUpgradeShoes,
   onClaimTrophy,
-  onPurchaseAutoClaim,
   onUnlockNextTower,
   upgradeCost, 
   shoeUpgradeCost,
-  autoClaimCost,
   trophyCost,
   coins, 
   isAtTop,
-  autoClaimUnlocked,
   canUnlockNext,
 }) => {
 
@@ -108,15 +101,6 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({
         label="Shoes"
         icon={<ShoeIcon className="w-5 h-5" />}
       />
-      {!autoClaimUnlocked && (
-        <UpgradeButton
-          onClick={onPurchaseAutoClaim}
-          disabled={coins < autoClaimCost}
-          cost={autoClaimCost}
-          label="Auto Claim"
-          icon={<AutoClaimIcon className="w-5 h-5" />}
-        />
-      )}
     </div>
   );
 };

@@ -13,5 +13,11 @@ export const INITIAL_SHOE_UPGRADE_COST = 100;
 export const SHOE_UPGRADE_COST_MULTIPLIER = 1.8;
 export const SHOE_BONUS_PER_LEVEL = 0.1; // 10% multiplicative bonus per level
 
-// Auto Claim Constant
-export const AUTO_CLAIM_COST = 5000;
+// Floating Item Constants
+export const FLOATING_ITEM_MIN_SPAWN_INTERVAL = 1 * 60 * 1000; // 1 minute
+export const FLOATING_ITEM_MAX_SPAWN_INTERVAL = 10 * 60 * 1000; // 10 minutes
+export const FLOATING_ITEM_LIFESPAN = 1 * 60 * 1000; // 1 minute
+export const FLOATING_ITEM_MIN_COIN_BONUS_SECONDS = 30; // Min reward is 30s of coin production
+export const FLOATING_ITEM_MAX_COIN_BONUS_SECONDS = 120; // Max reward is 120s of coin production
+export const FLOATING_ITEM_MIN_TROPHY_BONUS = 1;
+export const FLOATING_ITEM_MAX_TROPHY_BONUS = 3;

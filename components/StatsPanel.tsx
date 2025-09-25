@@ -7,6 +7,7 @@ interface StatsPanelProps {
   gameState: GameState;
   currentSpeed: number;
   onToggleAutoNext: () => void;
+  onToggleAutoClaim: () => void;
 }
 
 const StatItem: React.FC<{ icon: React.ReactNode; label: string; value: string; subValue?: string; colorClass: string }> = ({ icon, label, value, subValue, colorClass }) => (
@@ -23,7 +24,7 @@ const StatItem: React.FC<{ icon: React.ReactNode; label: string; value: string; 
 );
 
 const Toggle: React.FC<{label: string, enabled: boolean, onToggle: () => void}> = ({ label, enabled, onToggle }) => (
-  <div className="flex items-center justify-between col-span-2 p-2 bg-gray-900/50 rounded-lg border border-gray-700/50">
+  <div className="flex items-center justify-between col-span-1 p-2 bg-gray-900/50 rounded-lg border border-gray-700/50">
     <span className="text-sm text-gray-300">{label}</span>
     <button onClick={onToggle} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${enabled ? 'bg-cyan-500' : 'bg-gray-600'}`}>
       <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -32,7 +33,7 @@ const Toggle: React.FC<{label: string, enabled: boolean, onToggle: () => void}> 
 );
 
 
-const StatsPanel: React.FC<StatsPanelProps> = ({ gameState, currentSpeed, onToggleAutoNext }) => {
+const StatsPanel: React.FC<StatsPanelProps> = ({ gameState, currentSpeed, onToggleAutoNext, onToggleAutoClaim }) => {
   return (
     <div className="grid grid-cols-2 gap-3 mb-4">
       <StatItem
@@ -49,7 +50,12 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ gameState, currentSpeed, onTogg
         colorClass="text-cyan-300"
       />
       <Toggle 
-        label="Auto-Next Tower"
+        label="Auto Claim"
+        enabled={gameState.autoClaimEnabled}
+        onToggle={onToggleAutoClaim}
+      />
+      <Toggle 
+        label="Auto-Next"
         enabled={gameState.autoNextTowerEnabled}
         onToggle={onToggleAutoNext}
       />

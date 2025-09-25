@@ -9,6 +9,6 @@ export interface GameState {
   isAtTop: boolean;
   towerLevel: number; // Now represents the *currently selected* tower
   highestTowerUnlocked: number; // The highest tower the player has access to
-  autoClaimUnlocked: boolean;
+  autoClaimEnabled: boolean; // Toggle for automatically claiming trophies
   autoNextTowerEnabled: boolean; // Toggle for automatically unlocking the next tower
 }
