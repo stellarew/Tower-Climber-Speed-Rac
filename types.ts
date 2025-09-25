@@ -1,11 +1,13 @@
 export interface GameState {
   height: number;
-  coins: number;
-  trophies: number;
+  coins: bigint;
+  trophies: bigint;
   speedLevel: number;
-  upgradeCost: number;
+  upgradeCost: bigint;
   shoeLevel: number;
-  shoeUpgradeCost: number;
+  shoeUpgradeCost: bigint;
+  clickerLevel: number;
+  clickerUpgradeCost: bigint;
   isAtTop: boolean;
   towerLevel: number; // Now represents the *currently selected* tower
   highestTowerUnlocked: number; // The highest tower the player has access to

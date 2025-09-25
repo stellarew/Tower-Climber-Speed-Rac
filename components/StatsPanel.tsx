@@ -2,6 +2,8 @@ import React from 'react';
 import type { GameState } from '../types';
 import CoinIcon from './icons/CoinIcon';
 import SpeedIcon from './icons/SpeedIcon';
+import ClickerIcon from './icons/ClickerIcon';
+import { formatNumber } from '../utils/formatNumber';
 
 interface StatsPanelProps {
   gameState: GameState;
@@ -35,30 +37,43 @@ const Toggle: React.FC<{label: string, enabled: boolean, onToggle: () => void}> 
 
 const StatsPanel: React.FC<StatsPanelProps> = ({ gameState, currentSpeed, onToggleAutoNext, onToggleAutoClaim }) => {
   return (
-    <div className="grid grid-cols-2 gap-3 mb-4">
-      <StatItem
-        icon={<CoinIcon className="w-8 h-8" />}
-        label="Coins"
-        value={Math.floor(gameState.coins).toLocaleString()}
-        colorClass="text-yellow-300"
-      />
-      <StatItem
-        icon={<SpeedIcon className="w-8 h-8" />}
-        label="Speed"
-        value={`${currentSpeed.toFixed(2)} m/s`}
-        subValue={`Spd Lvl ${gameState.speedLevel} / Shoe Lvl ${gameState.shoeLevel}`}
-        colorClass="text-cyan-300"
-      />
-      <Toggle 
-        label="Auto Claim"
-        enabled={gameState.autoClaimEnabled}
-        onToggle={onToggleAutoClaim}
-      />
-      <Toggle 
-        label="Auto-Next"
-        enabled={gameState.autoNextTowerEnabled}
-        onToggle={onToggleAutoNext}
-      />
+    <div className="flex flex-col gap-3 mb-4">
+      <div className="grid grid-cols-3 gap-3">
+        <StatItem
+          icon={<CoinIcon className="w-8 h-8" />}
+          label="Coins"
+          value={formatNumber(gameState.coins)}
+          colorClass="text-yellow-300 col-span-1"
+        />
+        <StatItem
+          icon={<SpeedIcon className="w-8 h-8" />}
+          label="Speed"
+          value={`${currentSpeed.toFixed(2)} m/s`}
+          subValue={`Lvl ${gameState.speedLevel}/${gameState.shoeLevel}`}
+          colorClass="text-cyan-300 col-span-2"
+        />
+      </div>
+       <div className="grid grid-cols-3 gap-3">
+         <StatItem
+          icon={<ClickerIcon className="w-8 h-8" />}
+          label="Coins per Click"
+          value={formatNumber(gameState.clickerLevel * gameState.speedLevel)}
+          subValue={`Lvl ${gameState.clickerLevel}`}
+          colorClass="text-green-300 col-span-3"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Toggle 
+          label="Auto Claim"
+          enabled={gameState.autoClaimEnabled}
+          onToggle={onToggleAutoClaim}
+        />
+        <Toggle 
+          label="Auto-Next"
+          enabled={gameState.autoNextTowerEnabled}
+          onToggle={onToggleAutoNext}
+        />
+      </div>
     </div>
   );
 };
